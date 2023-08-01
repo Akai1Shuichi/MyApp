@@ -131,10 +131,6 @@ const userController = {
       res.status(400).send({ message: e.message });
     }
   },
-
-  loginTest: (req, res) => {
-    res.status(201).send(req.body);
-  },
 };
 
 module.exports = userController;
