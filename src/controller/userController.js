@@ -1,6 +1,7 @@
 const db = require('../db/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const validator = require('validator');
 require('dotenv').config({ path: 'config/.env' });
 // truy van
 const queryRow = async (sql, data = undefined) => {
@@ -19,19 +20,36 @@ const userController = {
     try {
       const sql = 'INSERT INTO user SET ?';
       const user = req.body;
-      //check password
-      //    if (user.isModified('password')) {
-      user.password = await bcrypt.hash(user.password, 8);
-      //   }
-      await queryRow(sql, [user]);
 
+      // check email is validator
+      if (!validator.isEmail(user.email)) {
+        res.status(400).send({ message: 'Invalid email format !!!' });
+        return;
+      }
+
+      // check email exist
+      const sql2 = 'SELECT * FROM user WHERE email = ?';
+      const [user2] = await queryRow(sql2, user.email);
+      if (user2) {
+        // error client
+        res.status(400).send({ message: 'This is email is already use!!!' });
+        return;
+      }
+
+      // check password
+      //  if (user.isModified('password')) {
+      user.password = await bcrypt.hash(user.password, 8);
+      // }
+      // insert
+      await queryRow(sql, [user]);
       // tao token
       const token = await generateAuthToken(user);
-
-      res.status(201).send({ message: 'Insert successfully !!!!', token });
-      // res.status(201).send(user);
+      // res
+      //   .status(201)
+      //   .send({ message: 'Insert successfully !!!!', token: token });
+      res.status(201).send(user);
     } catch (e) {
-      res.status(400).send({ message: e.message });
+      res.status(500).send({ message: e.message });
     }
   },
 
@@ -41,18 +59,19 @@ const userController = {
       const sql = 'SELECT * FROM user WHERE email = ?';
       const [user] = await queryRow(sql, req.body.email);
       if (!user) {
-        throw new Error('Email is not registered !!!');
+        res.status(400).send({ message: 'Email or Password is incorrect !!!' });
+        return;
       }
 
       const isMatch = await bcrypt.compare(req.body.password, user.password);
-
       if (!isMatch) {
-        throw new Error('Password is wrong !!!');
+        res.status(400).send({ message: 'Email or Password is incorrect !!!' });
+        return;
       }
 
       res.status(201).send(user);
     } catch (e) {
-      res.status(400).send({ message: e.message });
+      res.status(500).send({ message: e.message });
     }
   },
 
