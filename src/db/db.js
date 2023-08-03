@@ -8,4 +8,10 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME || '',
 });
 
-module.exports = pool.promise();
+// truy van
+const queryRow = async (sql, data = undefined) => {
+  const [row] = await pool.promise().query(sql, data);
+  return row[0];
+};
+
+module.exports = queryRow;
