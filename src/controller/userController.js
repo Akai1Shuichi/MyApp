@@ -48,9 +48,7 @@ const userController = {
       await queryRow('INSERT INTO token SET ?', [{ id_user: user2.id, token }]);
 
       // thong bao thanh cong
-      res
-        .status(201)
-        .send({ message: 'Insert successfully !!!!', token: token });
+      res.status(201).send({ message: 'Insert successfully !!!!', token });
     } catch (e) {
       res.status(500).send({ error: e.message });
     }
