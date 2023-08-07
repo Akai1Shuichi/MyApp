@@ -18,6 +18,8 @@ router.get('/user/you', auth, userController.get);
 // Update user
 router.patch('/user/you', auth, userController.update);
 
+// Update password user
+
 // Delete user
 router.delete('/user/you', auth, userController.delete);
 

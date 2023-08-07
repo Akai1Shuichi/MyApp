@@ -10,6 +10,11 @@ const generateAuthToken = async function (user) {
   return token;
 };
 
+const toHidePass = (user) => {
+  delete user.password;
+  return user;
+};
+
 const userController = {
   insert: async (req, res) => {
     try {
@@ -32,9 +37,7 @@ const userController = {
       }
 
       // check password
-      //  if (user.isModified('password')) {
       user.password = await bcrypt.hash(user.password, 8);
-      // }
 
       // insert
       await queryRow('INSERT INTO user SET ?', user);
@@ -50,7 +53,7 @@ const userController = {
       // thong bao thanh cong
       res.status(201).send({ message: 'Insert successfully !!!!', token });
     } catch (e) {
-      res.status(500).send({ error: e.message });
+      res.status(500).send({ message: e.message });
     }
   },
 
@@ -83,7 +86,7 @@ const userController = {
 
       res.status(201).send({ message: 'Login successfully !!!', token });
     } catch (e) {
-      res.status(500).send({ error: e.message });
+      res.status(500).send({ message: e.message });
     }
   },
 
@@ -95,7 +98,7 @@ const userController = {
       ]);
       res.status(201).send({ message: 'Logout !!!' });
     } catch (e) {
-      res.status(500).send({ error: e.message });
+      res.status(500).send({ message: e.message });
     }
   },
 
@@ -108,7 +111,7 @@ const userController = {
       if (!user) {
         res.status(400).send({ message: 'Khong tim thay user !!!' });
       }
-      res.status(201).send(user);
+      res.status(201).send(toHidePass(user));
     } catch (e) {
       res.status(500).send({ message: e.message });
     }
@@ -116,18 +119,31 @@ const userController = {
 
   update: async (req, res) => {
     const updates = Object.keys(req.body);
-    const allowedUpdates = ['name', 'email', 'password'];
+    const allowedUpdates = ['name', 'email'];
     const isValidOperation = updates.every((update) =>
       allowedUpdates.includes(update)
     );
 
-    if (!isValidOperation) {
-      throw new Error({ error: 'Invalid updates!' });
-    }
-
     try {
+      if (!isValidOperation) {
+        throw new Error('Invalid updates!');
+      }
+
+      // if have password that encrypt password
+      if ('password' in req.body) {
+        const isMatch = await bcrypt.compare(
+          req.body.password,
+          req.user.password
+        );
+        if (!isMatch) {
+          res.status(400).send({ message: 'Current Password is wrong !!!' });
+          return;
+        }
+        req.body.password = await bcrypt.hash(req.body.password, 8);
+      }
+
       const sql = 'UPDATE user SET ? WHERE id = ?';
-      await queryRow(sql, [req.body, req.params.id]);
+      await queryRow(sql, [req.body, req.user.id]);
       res.status(201).send({ message: 'Update Successfully!!!' });
     } catch (e) {
       res.status(400).send({ message: e.message });
